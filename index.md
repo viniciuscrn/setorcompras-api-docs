@@ -1,4 +1,6 @@
-# API SETOR COMPRAS
+---
+title: API SETOR COMPRAS
+---
 
 ## [Ordem de Implementação para o Frontend](docs/ordem-implementacao.md)
 
