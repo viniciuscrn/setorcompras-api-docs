@@ -1,0 +1,6 @@
+# _config.yml
+title: "Setor Compras API - Documentação"
+description: "Documentação da API Setor de Compras"
+theme: minima
+docs_dir: docs/
+
