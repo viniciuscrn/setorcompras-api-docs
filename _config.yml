@@ -4,3 +4,5 @@ description: "Documentação da API Setor de Compras"
 theme: minima
 docs_dir: docs/
 
+header_pages:
+  - index.md
