@@ -1,129 +1,44 @@
-# Empresas
+# Empresas (fornecedores)
 
-Base URL: `/api/empresas`
+> Formatos comuns (paginação `?per_page=`/`?q=`, `{ data, message }`, números, erros): [padroes.md](padroes.md).
 
-**Autenticação:** Todas as rotas requerem `Bearer {token}` no header `Authorization`.
+Base URL: `/api/{ente}/empresas` — permissão `catalogo` ([permissoes.md](permissoes.md)).
 
----
+> Todas as rotas ficam sob o slug da instituição (`/api/{ente}/...`) e exigem `Authorization: Bearer {token}`.
 
-## GET /empresas
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| GET | `/empresas?q=` | Lista paginada (ordem alfabética); `q` busca em razão social, CPF/CNPJ e cidade |
+| GET | `/empresas/{id}` | Detalhe |
+| POST | `/empresas` | Cria (`201`) |
+| PUT/PATCH | `/empresas/{id}` | Atualiza |
+| DELETE | `/empresas/{id}` | Remove; `409` se tiver contratos ou solicitações |
 
-Lista todas as empresas.
+## Body (POST / PUT)
 
-**Resposta de sucesso `200`:**
+| Campo | Tipo | Obrigatório | Regra |
+|-------|------|-------------|-------|
+| `cpfcnpj` | string | Sim | CPF ou CNPJ **válido** (dígitos verificadores), com ou sem máscara; único na instituição |
+| `razaosocial` | string | Sim | máx. 191 |
+| `endereco`, `bairro`, `cidade` | string | Sim | máx. 191 |
+| `uf` | string | Sim | sigla do estado (`RN`) |
+| `tel` | string | Sim | máx. 20 |
+| `email` | string | Não | e-mail válido |
 
-```json
-{
-  "data": [
-    {
-      "id": 1,
-      "cpfcnpj": "00.000.000/0001-00",
-      "razaosocial": "Empresa Exemplo Ltda",
-      "endereco": "Rua Exemplo, 123",
-      "bairro": "Centro",
-      "cidade": "Cidade",
-      "uf": "SP",
-      "tel": "(11) 1234-5678",
-      "email": "contato@empresa.com.br",
-      "created_at": "2026-01-01T00:00:00.000000Z",
-      "updated_at": "2026-01-01T00:00:00.000000Z"
-    }
-  ]
-}
-```
-
----
-
-## GET /empresas/{id}
-
-Retorna uma empresa específica.
-
-**Resposta de sucesso `200`:**
-
-```json
-{
-  "data": {
-    "id": 1,
-    "cpfcnpj": "00.000.000/0001-00",
-    "razaosocial": "Empresa Exemplo Ltda",
-    "endereco": "Rua Exemplo, 123",
-    "bairro": "Centro",
-    "cidade": "Cidade",
-    "uf": "SP",
-    "tel": "(11) 1234-5678",
-    "email": "contato@empresa.com.br",
-    "created_at": "2026-01-01T00:00:00.000000Z",
-    "updated_at": "2026-01-01T00:00:00.000000Z"
-  }
-}
-```
-
----
-
-## POST /empresas
-
-Cria uma nova empresa.
-
-**Body (JSON):**
-
-| Campo | Tipo | Obrigatório | Descrição |
-|-------|------|-------------|-----------|
-| `cpfcnpj` | string | Sim | CPF ou CNPJ |
-| `razaosocial` | string | Sim | Razão social |
-| `endereco` | string | Sim | Endereço |
-| `bairro` | string | Sim | Bairro |
-| `cidade` | string | Sim | Cidade |
-| `uf` | string | Sim | UF (ex: SP) |
-| `tel` | string | Sim | Telefone |
-| `email` | string | Não | E-mail |
-
-**Resposta de sucesso `201`:**
+CPF/CNPJ e telefone são **gravados e devolvidos só com dígitos** — a máscara fica por conta do front.
 
 ```json
 {
   "message": "Empresa criada com sucesso.",
-  "data": { ... }
+  "data": {
+    "id": 1, "cpfcnpj": "11222333000181", "tipo_pessoa": "juridica", "razaosocial": "Fornecedora Ltda",
+    "endereco": "Rua A, 10", "bairro": "Centro", "cidade": "Natal", "uf": "RN",
+    "tel": "84999990000", "email": "contato@fornecedora.com",
+    "created_at": "...", "updated_at": "..."
+  }
 }
 ```
 
----
+**Erros `422`:** `"O CPF/CNPJ informado é inválido."`, `"Já existe uma empresa com este CPF/CNPJ."`.
 
-## PUT/PATCH /empresas/{id}
-
-Atualiza uma empresa existente.
-
-**Body (JSON):**
-
-| Campo | Tipo | Obrigatório | Descrição |
-|-------|------|-------------|-----------|
-| `cpfcnpj` | string | Sim | CPF ou CNPJ |
-| `razaosocial` | string | Sim | Razão social |
-| `endereco` | string | Sim | Endereço |
-| `bairro` | string | Sim | Bairro |
-| `cidade` | string | Sim | Cidade |
-| `uf` | string | Sim | UF |
-| `tel` | string | Sim | Telefone |
-| `email` | string | Não | E-mail |
-
-**Resposta de sucesso `200`:**
-
-```json
-{
-  "message": "Empresa atualizada com sucesso.",
-  "data": { ... }
-}
-```
-
----
-
-## DELETE /empresas/{id}
-
-Remove uma empresa.
-
-**Resposta de sucesso `200`:**
-
-```json
-{
-  "message": "Empresa removida com sucesso."
-}
-```
+> O limite de compra direta **não é mais por empresa**: ele fica na natureza de despesa ([naturezas.md](naturezas.md)).

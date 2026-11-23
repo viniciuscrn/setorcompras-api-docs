@@ -1,131 +1,30 @@
-# Produtos
+# Produtos (catálogo)
 
-Base URL: `/api/produtos`
+> Formatos comuns (paginação `?per_page=`/`?q=`, `{ data, message }`, números, erros): [padroes.md](padroes.md).
 
-**Autenticação:** Todas as rotas requerem `Bearer {token}` no header `Authorization`.
+Base URL: `/api/{ente}/produtos` — permissão `catalogo`.
 
----
+O produto é só o **catálogo**: descrição e unidade. Quantidade, preço, marca e nº do item ficam no **item do contrato**
+([licitacoes-produtos.md](licitacoes-produtos.md)); o preço de compra direta fica no item da solicitação.
 
-## GET /produtos
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| GET | `/produtos?q=` | Lista paginada em ordem alfabética; `q` busca na descrição |
+| GET | `/produtos/{id}` | Detalhe |
+| POST | `/produtos` | Cria — ou devolve o existente (ver abaixo) |
+| PUT/PATCH | `/produtos/{id}` | Atualiza |
+| DELETE | `/produtos/{id}` | Remove; `409` se estiver em algum contrato ou solicitação |
 
-Lista todos os produtos cadastrados.
+## Body
 
-**Resposta de sucesso `200`:**
+| Campo | Tipo | Obrigatório | Regra |
+|-------|------|-------------|-------|
+| `descricao` | string | Sim | espaços repetidos são removidos |
+| `unidade` | string | Sim | máx. 30; gravada em maiúsculas (`un` → `UN`) |
 
-```json
-{
-  "data": [
-    {
-      "id": 1,
-      "descricao": "Notebook i5 16GB SSD 512GB",
-      "unidade": "UN",
-      "quant": "10.00",
-      "preco": "4200.00",
-      "marca": "Dell",
-      "numero_item": 1,
-      "created_at": "2026-01-01T00:00:00.000000Z",
-      "updated_at": "2026-01-01T00:00:00.000000Z"
-    }
-  ]
-}
-```
-
----
-
-## GET /produtos/{id}
-
-Retorna um produto específico.
-
-**Resposta de sucesso `200`:**
+**Sem duplicidade:** se já houver produto com a mesma descrição (ignorando maiúsculas e espaços extras) e unidade,
+o `POST` devolve esse produto com `200` e `"message": "Produto já existia no catálogo."`. Produto novo → `201`.
 
 ```json
-{
-  "data": {
-    "id": 1,
-    "descricao": "Notebook i5 16GB SSD 512GB",
-    "unidade": "UN",
-    "quant": "10.00",
-    "preco": "4200.00",
-    "marca": "Dell",
-    "numero_item": 1,
-    "created_at": "2026-01-01T00:00:00.000000Z",
-    "updated_at": "2026-01-01T00:00:00.000000Z"
-  }
-}
-```
-
----
-
-## POST /produtos
-
-Cadastra um novo produto.
-
-**Body (JSON):**
-
-| Campo | Tipo | Obrigatório | Descrição |
-|-------|------|-------------|-----------|
-| `descricao` | string | Sim | Descrição do produto |
-| `unidade` | string | Sim | Unidade de medida (ex: `UN`, `KG`, `CX`) |
-| `quant` | numeric | Sim | Quantidade |
-| `preco` | numeric | Sim | Preço unitário |
-| `marca` | string | Não | Marca do produto |
-| `numero_item` | integer | Não | Número do item no processo licitatório |
-
-**Resposta de sucesso `201`:**
-
-```json
-{
-  "message": "Produto criado com sucesso.",
-  "data": {
-    "id": 1,
-    "descricao": "Notebook i5 16GB SSD 512GB",
-    "unidade": "UN",
-    "quant": "10.00",
-    "preco": "4200.00",
-    "marca": "Dell",
-    "numero_item": 1,
-    "created_at": "2026-01-01T00:00:00.000000Z",
-    "updated_at": "2026-01-01T00:00:00.000000Z"
-  }
-}
-```
-
----
-
-## PUT/PATCH /produtos/{id}
-
-Atualiza um produto existente.
-
-**Body (JSON):**
-
-| Campo | Tipo | Obrigatório | Descrição |
-|-------|------|-------------|-----------|
-| `descricao` | string | Sim | Descrição do produto |
-| `unidade` | string | Sim | Unidade de medida |
-| `quant` | numeric | Sim | Quantidade |
-| `preco` | numeric | Sim | Preço unitário |
-| `marca` | string | Não | Marca |
-| `numero_item` | integer | Não | Número do item |
-
-**Resposta de sucesso `200`:**
-
-```json
-{
-  "message": "Produto atualizado com sucesso.",
-  "data": { ... }
-}
-```
-
----
-
-## DELETE /produtos/{id}
-
-Remove um produto.
-
-**Resposta de sucesso `200`:**
-
-```json
-{
-  "message": "Produto removido com sucesso."
-}
+{ "message": "Produto criado com sucesso.", "data": { "id": 3, "descricao": "Papel A4 75g", "unidade": "CX", "created_at": "...", "updated_at": "..." } }
 ```

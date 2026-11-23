@@ -1,6 +1,10 @@
 # Secretarias
 
-Base URL: `/api/secretarias`
+> Formatos comuns (paginação `?per_page=`/`?q=`, `{ data, message }`, números, erros): [padroes.md](padroes.md).
+
+Base URL: `/api/{ente}/secretarias`
+
+> Todas as rotas desta página ficam sob o slug da instituição: `/api/{ente}/...` (ex.: `/api/agua-branca/...`). Veja [admin.md](admin.md).
 
 **Autenticação:** Todas as rotas requerem `Bearer {token}` no header `Authorization`.
 
@@ -8,7 +12,7 @@ Base URL: `/api/secretarias`
 
 ## GET /secretarias
 
-Lista todas as secretarias com seus órgãos e responsáveis.
+Lista paginada (ordem alfabética) com órgãos e responsáveis. `?q=` busca no nome. Resposta com `data`, `links` e `meta` ([padroes.md](padroes.md)).
 
 **Resposta de sucesso `200`:**
 
@@ -18,8 +22,8 @@ Lista todas as secretarias com seus órgãos e responsáveis.
     {
       "id": 1,
       "nome": "Secretaria de Saúde",
-      "cnpj": "00.000.000/0001-00",
-      "tel": "(11) 1234-5678",
+      "cnpj": "00000000000191",
+      "tel": "1112345678",
       "created_at": "2026-01-01T00:00:00.000000Z",
       "updated_at": "2026-01-01T00:00:00.000000Z",
       "orgaos": [
@@ -33,7 +37,7 @@ Lista todas as secretarias com seus órgãos e responsáveis.
               "id": 1,
               "nome": "João Silva",
               "cargo": "Diretor",
-              "orgaos_id": 1
+              "orgao_id": 1
             }
           ]
         }
@@ -56,8 +60,8 @@ Retorna uma secretaria com seus órgãos e responsáveis.
   "data": {
     "id": 1,
     "nome": "Secretaria de Saúde",
-    "cnpj": "00.000.000/0001-00",
-    "tel": "(11) 1234-5678",
+    "cnpj": "00000000000191",
+    "tel": "1112345678",
     "created_at": "2026-01-01T00:00:00.000000Z",
     "updated_at": "2026-01-01T00:00:00.000000Z",
     "orgaos": [ ... ]
@@ -76,8 +80,8 @@ Cria uma nova secretaria.
 | Campo | Tipo | Obrigatório | Descrição |
 |-------|------|-------------|-----------|
 | `nome` | string | Sim | Nome da secretaria |
-| `cnpj` | string | Sim | CNPJ |
-| `tel` | string | Sim | Telefone |
+| `cnpj` | string | Não | CNPJ válido, com ou sem máscara (gravado só com dígitos) |
+| `tel` | string | Não | Telefone (gravado só com dígitos) |
 
 **Resposta de sucesso `201`:**
 
@@ -87,8 +91,8 @@ Cria uma nova secretaria.
   "data": {
     "id": 1,
     "nome": "Secretaria de Saúde",
-    "cnpj": "00.000.000/0001-00",
-    "tel": "(11) 1234-5678",
+    "cnpj": "00000000000191",
+    "tel": "1112345678",
     "created_at": "2026-01-01T00:00:00.000000Z",
     "updated_at": "2026-01-01T00:00:00.000000Z"
   }
@@ -106,8 +110,8 @@ Atualiza uma secretaria existente.
 | Campo | Tipo | Obrigatório | Descrição |
 |-------|------|-------------|-----------|
 | `nome` | string | Sim | Nome da secretaria |
-| `cnpj` | string | Sim | CNPJ |
-| `tel` | string | Sim | Telefone |
+| `cnpj` | string | Não | CNPJ válido, com ou sem máscara (gravado só com dígitos) |
+| `tel` | string | Não | Telefone (gravado só com dígitos) |
 
 **Resposta de sucesso `200`:**
 
@@ -123,6 +127,8 @@ Atualiza uma secretaria existente.
 ## DELETE /secretarias/{id}
 
 Remove uma secretaria.
+
+> Registro em uso por outros cadastros não é excluído: a API responde `409` com `message`.
 
 **Resposta de sucesso `200`:**
 

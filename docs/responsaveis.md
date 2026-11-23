@@ -1,6 +1,10 @@
 # Responsáveis
 
-Base URL: `/api/responsaveis`
+> Formatos comuns (paginação `?per_page=`/`?q=`, `{ data, message }`, números, erros): [padroes.md](padroes.md).
+
+Base URL: `/api/{ente}/responsaveis`
+
+> Todas as rotas desta página ficam sob o slug da instituição: `/api/{ente}/...` (ex.: `/api/agua-branca/...`). Veja [admin.md](admin.md).
 
 **Autenticação:** Todas as rotas requerem `Bearer {token}` no header `Authorization`.
 
@@ -8,7 +12,7 @@ Base URL: `/api/responsaveis`
 
 ## GET /responsaveis
 
-Lista todos os responsáveis com seu órgão vinculado.
+Lista paginada (ordem alfabética) com o órgão. `?q=` busca em nome e cargo. O detalhe traz órgão e secretaria.
 
 **Resposta de sucesso `200`:**
 
@@ -19,7 +23,7 @@ Lista todos os responsáveis com seu órgão vinculado.
       "id": 1,
       "nome": "João Silva",
       "cargo": "Diretor",
-      "orgaos_id": 1,
+      "orgao_id": 1,
       "created_at": "2026-01-01T00:00:00.000000Z",
       "updated_at": "2026-01-01T00:00:00.000000Z",
       "orgao": {
@@ -47,7 +51,7 @@ Retorna um responsável com seu órgão vinculado.
     "id": 1,
     "nome": "João Silva",
     "cargo": "Diretor",
-    "orgaos_id": 1,
+    "orgao_id": 1,
     "orgao": { ... }
   }
 }
@@ -65,7 +69,7 @@ Cria um novo responsável.
 |-------|------|-------------|-----------|
 | `nome` | string | Sim | Nome do responsável |
 | `cargo` | string | Sim | Cargo |
-| `orgaos_id` | integer | Sim | ID do órgão (deve existir) |
+| `orgao_id` | integer | Sim | ID do órgão (deve existir) |
 
 **Resposta de sucesso `201`:**
 
@@ -76,7 +80,7 @@ Cria um novo responsável.
     "id": 1,
     "nome": "João Silva",
     "cargo": "Diretor",
-    "orgaos_id": 1,
+    "orgao_id": 1,
     "orgao": { ... },
     "created_at": "2026-01-01T00:00:00.000000Z",
     "updated_at": "2026-01-01T00:00:00.000000Z"
@@ -96,7 +100,7 @@ Atualiza um responsável existente.
 |-------|------|-------------|-----------|
 | `nome` | string | Sim | Nome do responsável |
 | `cargo` | string | Sim | Cargo |
-| `orgaos_id` | integer | Sim | ID do órgão |
+| `orgao_id` | integer | Sim | ID do órgão |
 
 **Resposta de sucesso `200`:**
 
@@ -112,6 +116,8 @@ Atualiza um responsável existente.
 ## DELETE /responsaveis/{id}
 
 Remove um responsável.
+
+> Registro em uso por outros cadastros não é excluído: a API responde `409` com `message`.
 
 **Resposta de sucesso `200`:**
 

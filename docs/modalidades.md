@@ -1,6 +1,10 @@
 # Modalidades
 
-Base URL: `/api/modalidades`
+> Formatos comuns (paginação `?per_page=`/`?q=`, `{ data, message }`, números, erros): [padroes.md](padroes.md).
+
+Base URL: `/api/{ente}/modalidades`
+
+> Todas as rotas desta página ficam sob o slug da instituição: `/api/{ente}/...` (ex.: `/api/agua-branca/...`). Veja [admin.md](admin.md).
 
 **Autenticação:** Todas as rotas requerem `Bearer {token}` no header `Authorization`.
 
@@ -8,7 +12,7 @@ Base URL: `/api/modalidades`
 
 ## GET /modalidades
 
-Lista todas as modalidades.
+Lista paginada (ordem alfabética). `?q=` busca no nome. O nome é único (`422` se repetido).
 
 **Resposta de sucesso `200`:**
 
@@ -96,6 +100,8 @@ Atualiza uma modalidade existente.
 ## DELETE /modalidades/{id}
 
 Remove uma modalidade.
+
+> Registro em uso por outros cadastros não é excluído: a API responde `409` com `message`.
 
 **Resposta de sucesso `200`:**
 

@@ -1,169 +1,54 @@
-# Empresas Vencedoras de Licitações
+# Contratos (empresas × licitações)
 
-Base URL: `/api/empresas-licitacoes`
+> Formatos comuns (paginação `?per_page=`/`?q=`, `{ data, message }`, números, erros): [padroes.md](padroes.md).
 
-**Autenticação:** Todas as rotas requerem `Bearer {token}` no header `Authorization`.
+Base URL: `/api/{ente}/empresas-licitacoes` — permissão `licitacoes`.
 
----
+Um contrato liga a **empresa vencedora** a uma **licitação**, com valor, vigência e itens ([licitacoes-produtos.md](licitacoes-produtos.md)).
+A mesma empresa pode ter vários contratos (inclusive na mesma licitação, ex.: realinhamento); **o saldo é sempre por contrato**.
 
-## GET /empresas-licitacoes
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| GET | `/empresas-licitacoes?licitacao_id=&empresa_id=&vigentes_em=YYYY-MM-DD&q=` | Lista paginada com saldo; `q` busca no nº do contrato, razão social e nº da licitação |
+| GET | `/empresas-licitacoes/{id}` | Detalhe com saldo e itens |
+| POST | `/empresas-licitacoes` | Cria (`201`) |
+| PUT/PATCH | `/empresas-licitacoes/{id}` | Atualiza |
+| DELETE | `/empresas-licitacoes/{id}` | Exclusão lógica; `409` se já tiver solicitações |
 
-Lista todos os vínculos empresa-licitação.
+## Body
 
-Aceita filtros opcionais via query string:
+| Campo | Tipo | Obrigatório | Regra |
+|-------|------|-------------|-------|
+| `valor` | number | Sim | valor do contrato |
+| `ehrealinhamento` | boolean | Sim | |
+| `ehreforma` | boolean | Não | reforma de edifício ou equipamento: acréscimo por aditivo até **50 %** (padrão `false`) |
+| `numerocontrato` | string | Não | |
+| `iniciovigencia`, `fimvigencia` | date | Não | `YYYY-MM-DD`, os dois juntos; **sem datas, vale a vigência da licitação** |
+| `empresa_id` | integer | Sim | |
+| `licitacao_id` | integer | Sim | licitação não excluída |
 
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `licitacao_id` | integer | Filtra pelas empresas vencedoras de uma licitação específica |
-| `empresa_id` | integer | Filtra pelas licitações vencidas por uma empresa específica |
+Com solicitações já lançadas, não é possível trocar `empresa_id` nem `licitacao_id` (`422`).
 
-**Exemplo:** `GET /api/empresas-licitacoes?licitacao_id=1`
-
-**Resposta de sucesso `200`:**
-
-```json
-{
-  "data": [
-    {
-      "id": 1,
-      "valor": "35000.00",
-      "ehrealinhamento": false,
-      "valor_total_produtos": 28400.00,
-      "quantidade_total_produtos": 15.00,
-      "valor_gasto_contrato": 12000.00,
-      "valor_disponivel_contrato": 23000.00,
-      "numerocontrato": "CT-001/2026",
-      "iniciovigencia": "2026-02-10",
-      "fimvigencia": "2027-02-10",
-      "empresa_id": 1,
-      "licitacao_id": 1,
-      "created_at": "2026-01-01T00:00:00.000000Z",
-      "updated_at": "2026-01-01T00:00:00.000000Z",
-      "empresa": {
-        "id": 1,
-        "cpfcnpj": "00.000.000/0001-00",
-        "razaosocial": "Empresa Exemplo Ltda"
-      },
-      "licitacao": {
-        "id": 1,
-        "numero": "001/2026",
-        "objeto": "Aquisição de equipamentos de informática",
-        "modalidade": {
-          "id": 1,
-          "nome": "Pregão Eletrônico"
-        }
-      }
-    }
-  ]
-}
-```
-
-> **Campos calculados:**
-> - `valor_total_produtos` → soma de `produto.preco × produto.quant` de todos os itens vinculados ao contrato
-> - `quantidade_total_produtos` → soma de `produto.quant` de todos os itens
-> - `valor_gasto_contrato` → total já pago em solicitações licitadas desta empresa (`ehlicitada = true`)
-> - `valor_disponivel_contrato` → `valor` do contrato − `valor_gasto_contrato`
-
----
-
-## GET /empresas-licitacoes/{id}
-
-Retorna um vínculo empresa-licitação específico.
-
-**Resposta de sucesso `200`:**
+## Resposta (GET)
 
 ```json
 {
   "data": {
-    "id": 1,
-    "valor": "35000.00",
-    "ehrealinhamento": false,
-    "numerocontrato": "CT-001/2026",
-    "iniciovigencia": "2026-02-10",
-    "fimvigencia": "2027-02-10",
-    "empresa_id": 1,
-    "licitacao_id": 1,
-    "empresa": { ... },
-    "licitacao": { ... }
+    "id": 1, "valor": 5000, "ehrealinhamento": false, "ehreforma": false, "numerocontrato": "12/2026",
+    "iniciovigencia": null, "fimvigencia": null, "empresa_id": 1, "licitacao_id": 1,
+    "empresa": { ... }, "licitacao": { ..., "modalidade": { ... } },
+    "vigente_hoje": true,
+    "saldo": {
+      "valor_contrato": 5000.0,
+      "valor_itens": 450.0,
+      "valor_utilizado": 91.0,
+      "valor_disponivel": 4909.0
+    },
+    "itens": [ { "id": 1, "produto": { ... }, "quant_contratada": 12, "quant_disponivel": 9, "...": "ver licitacoes-produtos.md" } ]
   }
 }
 ```
 
----
-
-## POST /empresas-licitacoes
-
-Registra uma empresa como vencedora de uma licitação.
-
-**Body (JSON):**
-
-| Campo | Tipo | Obrigatório | Descrição |
-|-------|------|-------------|-----------|
-| `valor` | numeric | Sim | Valor do contrato |
-| `ehrealinhamento` | boolean | Sim | Indica se é um realinhamento de preço |
-| `numerocontrato` | string | Não | Número do contrato gerado |
-| `iniciovigencia` | date | Não | Início da vigência do contrato (`YYYY-MM-DD`) |
-| `fimvigencia` | date | Não | Fim da vigência do contrato (`YYYY-MM-DD`). Deve ser igual ou posterior a `iniciovigencia` |
-| `empresa_id` | integer | Sim | ID da empresa (deve existir) |
-| `licitacao_id` | integer | Sim | ID da licitação (deve existir) |
-
-**Resposta de sucesso `201`:**
-
-```json
-{
-  "message": "Empresa vencedora vinculada à licitação com sucesso.",
-  "data": {
-    "id": 1,
-    "valor": "35000.00",
-    "ehrealinhamento": false,
-    "numerocontrato": "CT-001/2026",
-    "iniciovigencia": "2026-02-10",
-    "fimvigencia": "2027-02-10",
-    "empresa_id": 1,
-    "licitacao_id": 1,
-    "empresa": { ... },
-    "licitacao": { ... }
-  }
-}
-```
-
----
-
-## PUT/PATCH /empresas-licitacoes/{id}
-
-Atualiza um vínculo empresa-licitação existente.
-
-**Body (JSON):**
-
-| Campo | Tipo | Obrigatório | Descrição |
-|-------|------|-------------|-----------|
-| `valor` | numeric | Sim | Valor do contrato |
-| `ehrealinhamento` | boolean | Sim | Indica se é um realinhamento de preço |
-| `numerocontrato` | string | Não | Número do contrato |
-| `iniciovigencia` | date | Não | Início da vigência (`YYYY-MM-DD`) |
-| `fimvigencia` | date | Não | Fim da vigência (`YYYY-MM-DD`) |
-| `empresa_id` | integer | Sim | ID da empresa |
-| `licitacao_id` | integer | Sim | ID da licitação |
-
-**Resposta de sucesso `200`:**
-
-```json
-{
-  "message": "Vínculo empresa-licitação atualizado com sucesso.",
-  "data": { ... }
-}
-```
-
----
-
-## DELETE /empresas-licitacoes/{id}
-
-Remove um vínculo empresa-licitação.
-
-**Resposta de sucesso `200`:**
-
-```json
-{
-  "message": "Vínculo empresa-licitação removido com sucesso."
-}
-```
+- `valor_itens`: soma de quantidade original × preço original dos itens.
+- `valor_utilizado`: soma dos itens das solicitações (não excluídas) que consomem este contrato.
+- `valor_disponivel`: `valor_contrato − valor_utilizado`.

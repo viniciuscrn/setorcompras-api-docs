@@ -1,6 +1,10 @@
 # Licitações
 
-Base URL: `/api/licitacoes`
+> Formatos comuns (paginação `?per_page=`/`?q=`, `{ data, message }`, números, erros): [padroes.md](padroes.md).
+
+Base URL: `/api/{ente}/licitacoes`
+
+> Todas as rotas desta página ficam sob o slug da instituição: `/api/{ente}/...` (ex.: `/api/agua-branca/...`). Veja [admin.md](admin.md).
 
 **Autenticação:** Todas as rotas requerem `Bearer {token}` no header `Authorization`.
 
@@ -8,7 +12,7 @@ Base URL: `/api/licitacoes`
 
 ## GET /licitacoes
 
-Lista todas as licitações com sua modalidade.
+Lista paginada (mais recentes primeiro) com a modalidade. Filtros: `?modalidade_id=`, `?ano=` (da sessão); `?q=` busca em número e objeto. O detalhe traz também os contratos (`contratos[].empresa`).
 
 **Resposta de sucesso `200`:**
 
@@ -76,7 +80,7 @@ Cria uma nova licitação.
 | `objeto` | string | Sim | Descrição do objeto |
 | `datasessao` | date | Sim | Data da sessão (formato: `YYYY-MM-DD`) |
 | `vigenciainicio` | date | Sim | Início da vigência (formato: `YYYY-MM-DD`) |
-| `vigenciafim` | date | Sim | Fim da vigência (formato: `YYYY-MM-DD`) |
+| `vigenciafim` | date | Sim | Fim da vigência (`YYYY-MM-DD`, igual ou posterior ao início) |
 | `sequencial` | string | Não | Número sequencial |
 | `modalidade_id` | integer | Sim | ID da modalidade (deve existir) |
 
@@ -115,7 +119,7 @@ Atualiza uma licitação existente.
 | `objeto` | string | Sim | Descrição do objeto |
 | `datasessao` | date | Sim | Data da sessão (formato: `YYYY-MM-DD`) |
 | `vigenciainicio` | date | Sim | Início da vigência (formato: `YYYY-MM-DD`) |
-| `vigenciafim` | date | Sim | Fim da vigência (formato: `YYYY-MM-DD`) |
+| `vigenciafim` | date | Sim | Fim da vigência (`YYYY-MM-DD`, igual ou posterior ao início) |
 | `sequencial` | string | Não | Número sequencial |
 | `modalidade_id` | integer | Sim | ID da modalidade |
 
@@ -132,7 +136,7 @@ Atualiza uma licitação existente.
 
 ## DELETE /licitacoes/{id}
 
-Remove uma licitação.
+Exclusão lógica (soft delete). Se a licitação tiver empresas vencedoras (contratos), responde `409` — remova os contratos antes.
 
 **Resposta de sucesso `200`:**
 

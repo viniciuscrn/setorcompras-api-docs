@@ -1,145 +1,56 @@
 # Instituição
 
-Base URL: `/api/instituicao`
+Base URL: `/api/{ente}/instituicao` — permissão `instituicao` (ver: todos; alterar: admin).
 
-**Autenticação:** Todas as rotas requerem `Bearer {token}` no header `Authorization`.
+> Formatos comuns (`{ data, message }`, erros): [padroes.md](padroes.md).
 
-> Recurso singular — existe apenas um registro de instituição no sistema.
+Recurso singular: **um registro por ente**, criado junto com o ente pela área de admin já com `nome`, `cnpj` e `uf`.
+A própria instituição só **completa e atualiza** o cadastro — não há criação nem exclusão por esta API.
+Enquanto faltar endereço, cidade, e-mail ou brasão, o login e o `/me` de quem pode alterar devolvem um alerta (`metodo: PUT`, `campos: [...]`).
 
----
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| GET | `/instituicao` | Dados da instituição |
+| PUT/PATCH | `/instituicao` | Atualiza (JSON) |
+| POST | `/instituicao` | Atualiza — use para enviar o brasão em `multipart/form-data` (o PHP não lê arquivos em PUT) |
+| GET | `/instituicao/logo` | **Pública** (sem token): a imagem do brasão; `404` se não houver |
 
 ## GET /instituicao
-
-Retorna os dados da instituição cadastrada.
-
-**Resposta de sucesso `200`:**
 
 ```json
 {
   "data": {
     "id": 1,
-    "cnpj": "00.000.000/0001-00",
-    "nome": "Prefeitura Municipal",
-    "endereco": "Rua Exemplo, 123",
+    "nome": "Prefeitura Municipal de Água Branca",
+    "cnpj": "12345678000195",
+    "endereco": "Praça Central, 1",
     "bairro": "Centro",
-    "cidade": "Cidade",
-    "uf": "SP",
-    "tel": "(11) 1234-5678",
-    "cel": "(11) 91234-5678",
-    "email": "contato@prefeitura.gov.br",
-    "site": "https://prefeitura.gov.br",
-    "logo": "instituicoes/logos/exemplo.png",
+    "cidade": "Água Branca",
+    "uf": "AL",
+    "tel": "8233330000",
+    "cel": "82999990000",
+    "email": "contato@aguabranca.al.gov.br",
+    "site": "https://aguabranca.al.gov.br",
+    "logo_url": "https://api.exemplo.com/api/agua-branca/instituicao/logo",
     "created_at": "2026-01-01T00:00:00.000000Z",
     "updated_at": "2026-01-01T00:00:00.000000Z"
   }
 }
 ```
 
-**Resposta de erro `404`:**
+`logo_url` é `null` sem brasão. O caminho interno do arquivo não é exposto.
 
-```json
-{
-  "message": "Instituição não cadastrada.",
-  "data": null
-}
-```
+## PUT / POST /instituicao
 
----
+| Campo | Tipo | Obrigatório | Regra |
+|-------|------|-------------|-------|
+| `nome` | string | Sim | |
+| `cnpj` | string | Não | CNPJ válido, com ou sem máscara (gravado só com dígitos) |
+| `endereco`, `bairro`, `cidade` | string | Não | |
+| `uf` | string | Não | sigla do estado |
+| `tel`, `cel` | string | Não | gravados só com dígitos |
+| `email` | string | Não | e-mail válido |
+| `site` | string | Não | |
+| `logo` | arquivo | Não | jpg, jpeg, png ou webp, até 2 MB; substitui o anterior |
 
-## POST /instituicao
-
-Cria a instituição. Só pode ser criada uma vez.
-
-**Body (multipart/form-data):**
-
-| Campo | Tipo | Obrigatório | Descrição |
-|-------|------|-------------|-----------|
-| `cnpj` | string | Sim | CNPJ da instituição |
-| `nome` | string | Sim | Nome da instituição |
-| `endereco` | string | Sim | Endereço |
-| `bairro` | string | Sim | Bairro |
-| `cidade` | string | Sim | Cidade |
-| `uf` | string | Sim | UF (ex: SP) |
-| `tel` | string | Sim | Telefone |
-| `cel` | string | Sim | Celular |
-| `email` | string | Sim | E-mail |
-| `site` | string | Sim | Site |
-| `logo` | file | Sim | Imagem (jpg, jpeg, png, webp — máx. 2MB) |
-
-**Resposta de sucesso `201`:**
-
-```json
-{
-  "message": "Instituição criada com sucesso.",
-  "data": { ... }
-}
-```
-
-**Resposta de erro `409`:**
-
-```json
-{
-  "message": "Instituição já cadastrada. Utilize PUT/PATCH para atualizar."
-}
-```
-
----
-
-## PUT /instituicao / PATCH /instituicao
-
-Atualiza os dados da instituição.
-
-**Body (multipart/form-data):**
-
-| Campo | Tipo | Obrigatório | Descrição |
-|-------|------|-------------|-----------|
-| `cnpj` | string | Sim | CNPJ da instituição |
-| `nome` | string | Sim | Nome da instituição |
-| `endereco` | string | Sim | Endereço |
-| `bairro` | string | Sim | Bairro |
-| `cidade` | string | Sim | Cidade |
-| `uf` | string | Sim | UF |
-| `tel` | string | Sim | Telefone |
-| `cel` | string | Sim | Celular |
-| `email` | string | Sim | E-mail |
-| `site` | string | Sim | Site |
-| `logo` | file | Não | Nova imagem (substitui a anterior) |
-
-**Resposta de sucesso `200`:**
-
-```json
-{
-  "message": "Instituição atualizada com sucesso.",
-  "data": { ... }
-}
-```
-
-**Resposta de erro `404`:**
-
-```json
-{
-  "message": "Instituição não cadastrada. Utilize POST para criar."
-}
-```
-
----
-
-## DELETE /instituicao
-
-Remove a instituição cadastrada.
-
-**Resposta de sucesso `200`:**
-
-```json
-{
-  "message": "Instituição removida com sucesso."
-}
-```
-
-**Resposta de erro `404`:**
-
-```json
-{
-  "message": "Instituição não cadastrada."
-}
-```
+Campos não enviados ficam como estão. Resposta: `{ "data": { ... }, "message": "Instituição atualizada com sucesso." }`.

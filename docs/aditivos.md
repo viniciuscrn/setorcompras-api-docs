@@ -1,185 +1,55 @@
 # Aditivos
 
-Base URL: `/api/aditivos`
+> Formatos comuns (paginação `?per_page=`/`?q=`, `{ data, message }`, números, erros): [padroes.md](padroes.md).
 
-**Autenticação:** Todas as rotas requerem `Bearer {token}` no header `Authorization`.
+Base URL: `/api/{ente}/aditivos` — permissão `licitacoes`.
 
-> Um aditivo representa uma alteração contratual de preço e/ou quantidade em um item específico de um contrato (`licitacoes_produtos`). Podem existir múltiplos aditivos para o mesmo item.
+Um aditivo altera **um item do contrato**: novo preço, acréscimo ou supressão de quantidade (art. 125 da Lei 14.133).
 
----
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| GET | `/aditivos?licitacao_produto_id=` | Aditivos do item + resumo (filtro obrigatório) |
+| GET | `/aditivos/{id}` | Detalhe (com `item.produto`) |
+| POST | `/aditivos` | Registra (`201`) |
+| PUT/PATCH | `/aditivos/{id}` | Altera (o item não muda) |
+| DELETE | `/aditivos/{id}` | Remove |
 
-## GET /aditivos?licitacao_produto_id={id}
+## Body
 
-Lista todos os aditivos de um item contratual. O parâmetro `licitacao_produto_id` é **obrigatório**.
-
-**Query string:**
-
-| Parâmetro | Tipo | Obrigatório | Descrição |
-|-----------|------|-------------|-----------|
-| `licitacao_produto_id` | integer | Sim | ID do registro em `licitacoes_produtos` |
-
-**Exemplo:** `GET /api/aditivos?licitacao_produto_id=3`
-
-**Resposta de sucesso `200`:**
-
-```json
-{
-  "data": [
-    {
-      "id": 1,
-      "tipo": "quantidade",
-      "quant": "2.00",
-      "preco": null,
-      "licitacao_produto_id": 3,
-      "created_at": "2026-02-01T00:00:00.000000Z",
-      "updated_at": "2026-02-01T00:00:00.000000Z",
-      "licitacao_produto": {
-        "id": 3,
-        "produto": {
-          "id": 1,
-          "descricao": "Notebook i5 16GB SSD 512GB",
-          "quant": "10.00",
-          "preco": "4200.00"
-        }
-      }
-    }
-  ],
-  "resumo": {
-    "quant_original": 10,
-    "quant_total_aditivada": 2,
-    "percentual_aditivado": 20,
-    "limite_recomendado": "25%",
-    "limite_atingido": false,
-    "preco_original": 4200,
-    "preco_atual": 4200
-  }
-}
-```
-
-> O campo `resumo` consolida o estado atual do item: total aditivado de quantidade, percentual atingido e o preço vigente (último aditivo de preço, ou o original caso não haja).
-
----
-
-## GET /aditivos/{id}
-
-Retorna um aditivo específico.
-
-**Resposta de sucesso `200`:**
-
-```json
-{
-  "data": {
-    "id": 1,
-    "tipo": "ambos",
-    "quant": "3.00",
-    "preco": "4500.00",
-    "licitacao_produto_id": 3,
-    "licitacao_produto": {
-      "id": 3,
-      "produto": { ... }
-    }
-  }
-}
-```
-
----
-
-## POST /aditivos
-
-Cria um novo aditivo para um item contratual.
-
-**Body (JSON):**
-
-| Campo | Tipo | Obrigatório | Descrição |
-|-------|------|-------------|-----------|
-| `licitacao_produto_id` | integer | Sim | ID do item em `licitacoes_produtos` |
-| `tipo` | string | Sim | Tipo do aditivo: `preco`, `quantidade` ou `ambos` |
-| `quant` | numeric | Condicional | Obrigatório quando `tipo` for `quantidade` ou `ambos` |
-| `preco` | numeric | Condicional | Obrigatório quando `tipo` for `preco` ou `ambos` |
-
-**Resposta de sucesso `201` — sem aviso:**
-
-```json
-{
-  "message": "Aditivo criado com sucesso.",
-  "data": {
-    "id": 2,
-    "tipo": "quantidade",
-    "quant": "2.00",
-    "preco": null,
-    "licitacao_produto_id": 3
-  }
-}
-```
-
-**Resposta de sucesso `201` — com aviso de limite de quantidade:**
-
-```json
-{
-  "message": "Aditivo criado com sucesso.",
-  "aviso": "A quantidade total aditivada (3) representa 30% da quantidade original (10), ultrapassando o limite recomendado de 25%.",
-  "data": { ... }
-}
-```
-
-> O campo `aviso` aparece apenas quando a soma acumulada de aditivos de quantidade ultrapassa 25% da quantidade original. O registro é salvo normalmente — é apenas um alerta informativo.
-
----
-
-## PUT/PATCH /aditivos/{id}
-
-Atualiza um aditivo existente. O `licitacao_produto_id` não pode ser alterado via update.
-
-**Body (JSON):**
-
-| Campo | Tipo | Obrigatório | Descrição |
-|-------|------|-------------|-----------|
+| Campo | Tipo | Obrigatório | Regra |
+|-------|------|-------------|-------|
+| `licitacao_produto_id` | integer | Sim (só no POST) | item do contrato |
 | `tipo` | string | Sim | `preco`, `quantidade` ou `ambos` |
-| `quant` | numeric | Condicional | Obrigatório quando `tipo` for `quantidade` ou `ambos` |
-| `preco` | numeric | Condicional | Obrigatório quando `tipo` for `preco` ou `ambos` |
+| `quant` | number | Se `quantidade`/`ambos` | **positivo = acréscimo, negativo = supressão**; não pode ser 0 |
+| `preco` | number | Se `preco`/`ambos` | novo preço unitário |
+| `justificativa` | string | Acima do limite | ver abaixo |
 
-**Resposta de sucesso `200`:**
+O campo que o tipo não usa é gravado como `null` (ex.: `quant` num aditivo só de preço).
 
-```json
-{
-  "message": "Aditivo atualizado com sucesso.",
-  "data": { ... }
-}
-```
+## Regras
 
----
+- **Limite legal:** acréscimos e supressões acumulados do item, cada um, até **25 %** da quantidade original
+  (`LIMITE_ADITIVO_PERCENTUAL`). Em contrato de **reforma** (`ehreforma: true`) os acréscimos vão até **50 %**
+  (`LIMITE_ADITIVO_REFORMA_PERCENTUAL`); a supressão continua em 25 %. Acima disso o aditivo **só é aceito com `justificativa`** — sem ela, `422` em `justificativa`;
+  com ela, a resposta traz `aviso`.
+- **Supressão** não pode deixar a quantidade contratada abaixo do que já foi utilizado (`422` em `quant`).
+- **Excluir** um acréscimo que já foi consumido é recusado (`422`).
+- O preço das solicitações já lançadas não muda: o preço é gravado no item da solicitação no momento do lançamento.
 
-## DELETE /aditivos/{id}
-
-Remove um aditivo.
-
-**Resposta de sucesso `200`:**
+## Resposta
 
 ```json
 {
-  "message": "Aditivo removido com sucesso."
+  "message": "Aditivo registrado com sucesso.",
+  "aviso": "Os aditivos somam 30% de acréscimo e 0% de supressão sobre a quantidade original (100), acima do limite legal de 25%. Registrado com justificativa.",
+  "data": { "id": 2, "tipo": "quantidade", "quant": 10, "preco": null, "justificativa": "Demanda emergencial", "licitacao_produto_id": 1 },
+  "resumo": {
+    "licitacao_produto_id": 1, "empresa_licitacao_id": 1, "produto_id": 3,
+    "quant_original": 100, "quant_acrescida": 30, "quant_suprimida": 0, "quant_contratada": 130,
+    "preco_original": 10, "preco_atual": 10, "quant_utilizada": 0, "quant_disponivel": 130, "valor_disponivel": 1300,
+    "percentual_acrescido": 30, "percentual_suprimido": 0, "limite_acrescimo_percentual": 25, "limite_supressao_percentual": 25, "limite_ultrapassado": true
+  }
 }
 ```
 
----
-
-## Regras de negócio
-
-**Tipos de aditivo:**
-
-| `tipo` | `quant` | `preco` |
-|--------|---------|---------|
-| `quantidade` | Obrigatório | Ignorado |
-| `preco` | Ignorado | Obrigatório |
-| `ambos` | Obrigatório | Obrigatório |
-
-**Limite de quantidade (25%):**
-
-- A soma de todos os aditivos de quantidade (tipo `quantidade` ou `ambos`) de um mesmo item não deve ultrapassar 25% da quantidade original do produto.
-- Caso ultrapasse, a API retorna o campo `aviso` na resposta, mas **o aditivo é salvo normalmente**.
-- O campo `resumo.limite_atingido` no endpoint de listagem indica se o limite já foi ultrapassado.
-
-**Preço:**
-
-- Não há limite para aditivos de preço.
-- O `resumo.preco_atual` sempre reflete o preço do aditivo mais recente. Caso não haja aditivo de preço, retorna o preço original do produto.
+`aviso` só aparece quando o limite foi ultrapassado. O `GET /aditivos?licitacao_produto_id=` (não paginado) devolve `data` (lista) e o mesmo `resumo`; o `GET /aditivos/{id}` também traz o `resumo`.

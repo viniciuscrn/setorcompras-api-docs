@@ -1,6 +1,10 @@
 # Órgãos
 
-Base URL: `/api/orgaos`
+> Formatos comuns (paginação `?per_page=`/`?q=`, `{ data, message }`, números, erros): [padroes.md](padroes.md).
+
+Base URL: `/api/{ente}/orgaos`
+
+> Todas as rotas desta página ficam sob o slug da instituição: `/api/{ente}/...` (ex.: `/api/agua-branca/...`). Veja [admin.md](admin.md).
 
 **Autenticação:** Todas as rotas requerem `Bearer {token}` no header `Authorization`.
 
@@ -8,7 +12,7 @@ Base URL: `/api/orgaos`
 
 ## GET /orgaos
 
-Lista todos os órgãos com sua secretaria e responsáveis.
+Lista paginada (ordem alfabética) com a secretaria. `?q=` busca no nome do órgão e da secretaria. O detalhe (`GET /orgaos/{id}`) traz também os responsáveis.
 
 **Resposta de sucesso `200`:**
 
@@ -25,15 +29,15 @@ Lista todos os órgãos com sua secretaria e responsáveis.
       "secretaria": {
         "id": 1,
         "nome": "Secretaria de Saúde",
-        "cnpj": "00.000.000/0001-00",
-        "tel": "(11) 1234-5678"
+        "cnpj": "00000000000191",
+        "tel": "1112345678"
       },
       "responsaveis": [
         {
           "id": 1,
           "nome": "João Silva",
           "cargo": "Diretor",
-          "orgaos_id": 1
+          "orgao_id": 1
         }
       ]
     }
@@ -121,6 +125,8 @@ Atualiza um órgão existente.
 ## DELETE /orgaos/{id}
 
 Remove um órgão.
+
+> Registro em uso por outros cadastros não é excluído: a API responde `409` com `message`.
 
 **Resposta de sucesso `200`:**
 
