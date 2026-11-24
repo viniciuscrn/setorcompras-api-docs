@@ -2,14 +2,19 @@
 
 Este documento define a ordem recomendada para o frontend implementar a integração com a API, respeitando as dependências entre os recursos.
 
-> **Multi-instituição:** cada instituição (ente) tem banco próprio e é identificada pelo slug na URL — todas as rotas abaixo ficam em `/api/{ente}/...` (ex.: `/api/agua-branca/login`). O token emitido em um ente só vale nele. O cadastro de instituições é feito pela área de admin (`/api/admin/...`), descrita em [admin.md](admin.md).
+> **Multi-instituição:** cada instituição (ente) tem banco próprio e é identificada pelo slug na URL — as rotas das etapas 1 a 9 ficam em `/api/{ente}/...` (ex.: `/api/agua-branca/login`). O token emitido em um ente só vale nele.
+>
+> **Duas áreas independentes:** a **área de admin** (`/api/admin/...`, Etapa 0), onde a equipe do SetorCompras cadastra as instituições, e a **área da instituição** (`/api/{ente}/...`, etapas 1 a 9), usada pela prefeitura. Cada uma tem o seu login; o token de uma não vale na outra (`401`). Podem ser dois módulos do mesmo front ou dois apps.
 
 ---
 
 ## Visão Geral das Dependências
 
 ```
-Auth
+Admin (área de administração — /api/admin)
+ └── Instituições (cria o ente + admin da instituição com senha provisória)
+
+Auth da instituição (/api/{ente})
  └── Instituição (configuração inicial)
  └── Cadastros Base (independentes entre si)
       ├── Secretarias
@@ -27,6 +32,35 @@ Auth
 Solicitações (requer Empresa + Responsável + Contrato vigente OU Natureza)
  └── Itens da solicitação (licitada: item do contrato; direta: produto + preço)
 ```
+
+---
+
+## Etapa 0 — Área de administração (cadastro de instituições)
+
+**Prioridade:** Primeira a implementar — sem uma instituição cadastrada não há onde entrar nas etapas seguintes.
+Base: `/api/admin`. Login próprio (administrador do sistema), separado dos usuários das instituições.
+
+| Endpoint | Método | Descrição |
+| -------- | ------ | --------- |
+| `/api/admin/login` | POST | Login do administrador do sistema, retorna token Bearer |
+| `/api/admin/logout` | POST | Logout e revogação do token |
+| `/api/admin/me` | GET | Dados do administrador logado |
+| `/api/admin/entes` | GET | Lista paginada (`q`, `ativo`, `per_page`) |
+| `/api/admin/entes` | POST | Cria a instituição (banco, perfis, admin da instituição) — **mostrar a senha provisória uma única vez** |
+| `/api/admin/entes/{slug}` | GET | Detalhe |
+| `/api/admin/entes/{slug}` | PUT/PATCH | Edita nome, UF, CNPJ, código IBGE (o slug é fixo) |
+| `/api/admin/entes/{slug}/desativar` | POST | Bloqueia o acesso da instituição (sem apagar dados) |
+| `/api/admin/entes/{slug}/reativar` | POST | Libera o acesso de novo |
+| `/api/admin/entes/{slug}/resetar-admin` | POST | Nova senha provisória para o admin da instituição |
+| `/api/admin/entes/{slug}/status` | GET | Usuários e migrations pendentes |
+
+> Telas sugeridas: login · lista de instituições (busca, filtro ativas/desativadas) · cadastro (o POST leva alguns segundos:
+> mostrar carregamento e não reenviar) · modal com a senha provisória e o `url_api` para repassar à instituição ·
+> edição · ações de desativar/reativar e resetar admin.
+>
+> `POST /api/admin/entes/migrar` é operacional (usado após deploy); não precisa de tela.
+
+Consulte: [docs/admin.md](admin.md)
 
 ---
 
@@ -274,7 +308,8 @@ Consulte: [docs/solicitacoes.md](solicitacoes.md)
 
 | Etapa | Módulo                  | Depende de                       |
 | ----- | ----------------------- | -------------------------------- |
-| 1     | Autenticação            | —                                |
+| 0     | Área de admin (instituições) | —                           |
+| 1     | Autenticação            | Instituição criada na etapa 0    |
 | 2     | Instituição             | Auth                             |
 | 3.1   | Secretarias             | —                                |
 | 3.2   | Órgãos                  | —                                |
