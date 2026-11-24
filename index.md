@@ -9,11 +9,13 @@ slug na URL: `/api/{ente}/...` (ex.: `/api/agua-branca/login`).
 
 | | |
 |---|---|
-| Base URL | `https://setorcompras-api.viniciusm.com.br/api/homologacao` |
+| Área de admin (cadastro de instituições) | `https://setorcompras-api.viniciusm.com.br/api/admin` — [admin](docs/admin.md) |
+| Base URL da instituição | `https://setorcompras-api.viniciusm.com.br/api/homologacao` |
 | Ente (slug) | `homologacao` |
 | Saúde | `GET https://setorcompras-api.viniciusm.com.br/up` → `200` |
 
-- Login: `POST /api/homologacao/login` com `{ "email", "password" }` → token. Envie `Authorization: Bearer {token}`
+- Login do administrador do sistema: `POST /api/admin/login` (token só vale em `/api/admin/...`).
+- Login na instituição: `POST /api/homologacao/login` com `{ "email", "password" }` → token. Envie `Authorization: Bearer {token}`
   e `Accept: application/json` em todas as chamadas.
 - O primeiro acesso usa senha provisória: só `/me`, `/logout` e `PUT /senha` funcionam até a troca ([auth](docs/auth.md)).
 - CORS liberado para qualquer origem (o front usa token, sem cookies).

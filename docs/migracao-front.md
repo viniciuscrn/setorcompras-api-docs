@@ -23,7 +23,8 @@ Cada instituição (prefeitura, câmara...) tem banco próprio e é identificada
 - O token emitido em um ente **só vale nele**. Usar o token de um ente em outro dá `401`.
 - Slug inexistente ou instituição desativada: `404`.
 - **Front:** guardar o slug (escolhido no login, vindo do subdomínio ou da configuração do deploy) e prefixar todas as chamadas.
-  Ver [admin.md](admin.md) para a área que cadastra as instituições.
+  Ver [admin.md](admin.md) para a área que cadastra as instituições — ela segue os mesmos padrões
+  (listagem `{ data, links, meta }`, `{ data, message }` nas gravações, UF/CNPJ validados).
 
 ### 1.2 Listagens paginadas
 

@@ -26,20 +26,43 @@ Encerra o token atual · Dados do administrador logado.
 
 ---
 
+## Instituição (formato)
+
+Todas as rotas de instituição devolvem este objeto em `data`:
+
+```json
+{
+  "id": 1, "slug": "agua-branca", "nome": "Prefeitura de Água Branca", "uf": "RN",
+  "cnpj": "08123456000190", "codigo_ibge": "2400208", "ativo": true,
+  "url_api": "https://setorcompras-api.viniciusm.com.br/api/agua-branca",
+  "created_at": "2026-11-24T15:00:00.000000Z", "updated_at": "2026-11-24T15:00:00.000000Z"
+}
+```
+
+`url_api` é a base das rotas da instituição (o que o front da instituição usa como base URL).
+CNPJ e código IBGE saem só com dígitos. Formatos gerais (paginação, mensagens, erros): [padroes.md](padroes.md).
+
 ## GET /entes
 
-Lista paginada (`?q=` busca por nome ou slug, `?per_page=`). Formato de paginação do Laravel sem Resource (`data`, `total`, `current_page`...) — diferente do padrão das rotas do ente ([padroes.md](padroes.md)).
+Lista paginada no padrão da API (`{ data, links, meta }`), em ordem de nome.
+
+| Parâmetro | Descrição |
+|-----------|-----------|
+| `q` | busca em nome, slug e CNPJ |
+| `ativo` | `1` só ativas · `0` só desativadas |
+| `per_page` · `page` | 1–100 (padrão 15) |
 
 ## POST /entes
 
 Cria a instituição: registra o ente, **cria o banco**, roda as migrations, cria os perfis (`admin`, `gerente`, `licitacao`, `compras`), cria o registro da instituição e o usuário admin dela com **senha provisória**.
+Leva alguns segundos — mostre um indicador de carregamento e não reenvie.
 
 | Campo | Tipo | Obrigatório | Regras |
 |-------|------|-------------|--------|
-| `slug` | string | Sim | minúsculas, números e hífens (`agua-branca`); único; não pode ser `admin`, `api`, `login`, `logout`, `me`, `up`. **Não pode ser alterado depois.** |
-| `nome` | string | Sim | |
-| `uf` | string | Sim | 2 letras |
-| `cnpj` | string | Não | gravado só com dígitos |
+| `slug` | string | Sim | minúsculas, números e hífens (`agua-branca`), até 40; único; não pode ser `admin`, `api`, `login`, `logout`, `me`, `up`. **Não pode ser alterado depois.** |
+| `nome` | string | Sim | até 191 |
+| `uf` | string | Sim | sigla de estado válida (`rn` vira `RN`) |
+| `cnpj` | string | Não | CNPJ válido, com ou sem máscara; gravado só com dígitos |
 | `codigo_ibge` | string | Não | 7 dígitos |
 | `admin.name` | string | Sim | admin da instituição |
 | `admin.email` | string | Sim | |
@@ -48,21 +71,30 @@ Cria a instituição: registra o ente, **cria o banco**, roda as migrations, cri
 
 ```json
 {
+  "data": { "id": 1, "slug": "agua-branca", "nome": "Prefeitura de Água Branca", "uf": "RN", "...": "..." },
   "message": "Instituição criada com sucesso. Repasse a senha provisória ao administrador da instituição.",
-  "data": { "id": 1, "slug": "agua-branca", "nome": "Prefeitura de Água Branca", "uf": "RN", "cnpj": null, "codigo_ibge": null, "ativo": true },
   "admin": { "email": "maria@aguabranca.gov.br", "senha_provisoria": "9cRx9lf5Y4gr" }
 }
 ```
 
 > A senha provisória só aparece nesta resposta. Se perder, use `resetar-admin`. No primeiro acesso o admin da instituição é obrigado a trocá-la (`PUT /api/{slug}/senha`).
 
-## GET /entes/{slug} · PUT/PATCH /entes/{slug}
+**`422`** (em `errors`): slug fora do formato ("Use apenas letras minúsculas, números e hífens…"), reservado
+("Este endereço é reservado pelo sistema…"), repetido ("Já existe uma instituição com este endereço."), UF/CNPJ/IBGE inválidos.
 
-Detalhe · Edita `nome`, `uf`, `cnpj`, `codigo_ibge` (o slug é fixo).
+## GET /entes/{slug}
+
+`{ data: instituição }` · `404` "Registro não encontrado.".
+
+## PUT/PATCH /entes/{slug}
+
+Edita `nome`, `uf`, `cnpj`, `codigo_ibge` — envie só o que mudar (mesmas regras do cadastro). `slug` e `admin` enviados são ignorados.
+**`200`:** `{ data, message: "Instituição atualizada com sucesso." }`
 
 ## POST /entes/{slug}/desativar · POST /entes/{slug}/reativar
 
 Desativar bloqueia todo o acesso da instituição (`/api/{slug}/...` passa a responder `404`) **sem apagar dados**. Reativar libera de novo.
+**`200`:** `{ data, message }`.
 
 > Não existe exclusão pela API. Apagar o banco de uma instituição só pelo terminal: `php artisan ente:excluir {slug}` (pede confirmação; faça backup antes).
 
