@@ -5,6 +5,21 @@ title: API SETOR COMPRAS
 API REST do setor de compras de prefeituras e órgãos públicos. Cada instituição tem banco próprio e é acessada pelo
 slug na URL: `/api/{ente}/...` (ex.: `/api/agua-branca/login`).
 
+## Ambiente de homologação
+
+| | |
+|---|---|
+| Base URL | `https://setorcompras-api.viniciusm.com.br/api/homologacao` |
+| Ente (slug) | `homologacao` |
+| Saúde | `GET https://setorcompras-api.viniciusm.com.br/up` → `200` |
+
+- Login: `POST /api/homologacao/login` com `{ "email", "password" }` → token. Envie `Authorization: Bearer {token}`
+  e `Accept: application/json` em todas as chamadas.
+- O primeiro acesso usa senha provisória: só `/me`, `/logout` e `PUT /senha` funcionam até a troca ([auth](docs/auth.md)).
+- CORS liberado para qualquer origem (o front usa token, sem cookies).
+- Credenciais de acesso são passadas à parte — nunca neste repositório.
+- Dados de homologação podem ser apagados a qualquer momento.
+
 ## Comece por aqui
 
 - **[Guia de migração do front](docs/migracao-front.md)** — tudo o que mudou e o que ajustar no front
