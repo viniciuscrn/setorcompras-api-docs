@@ -25,6 +25,7 @@ slug na URL: `/api/{ente}/...` (ex.: `/api/agua-branca/login`).
 ## Comece por aqui
 
 - **[Guia de migração do front](docs/migracao-front.md)** — tudo o que mudou e o que ajustar no front
+- **[Exemplos de chamadas](docs/exemplos.md)** — admin e instituição, com cliente fetch e respostas reais
 - [Padrões da API](docs/padroes.md) — paginação, formato das respostas, tipos e erros
 - [Perfis e permissões](docs/permissoes.md)
 - [Ordem de implementação para o frontend](docs/ordem-implementacao.md)
